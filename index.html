@@ -68,11 +68,25 @@
         var bounds_group = new L.featureGroup([]);
         function setBounds() {
         }
+
+
+//BASEMAPS
+
+		var overlay_OpenTopoMap_0 = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+		attribution: 'Map data: &copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
+		});
+		//overlay_OpenTopoMap_0.addTo(map);
+		//map.addLayer(overlay_OpenTopoMap_0);
+		
         var overlay_OpenStreetMap_0 = L.tileLayer('http://a.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             opacity: 1.0
         });
         overlay_OpenStreetMap_0.addTo(map);
         map.addLayer(overlay_OpenStreetMap_0);
+		
+
+		
+		
         function pop_Initial500310ka_1(feature, layer) {
             layer.on({
                 mouseout: function(e) {
@@ -492,7 +506,7 @@
         });
         bounds_group.addLayer(layer_Ochrealltime_5);
         map.addLayer(layer_Ochrealltime_5);
-        var baseMaps = {"OpenStreetMap": overlay_OpenStreetMap_0,};
+        var baseMaps = {"OpenStreetMap": overlay_OpenStreetMap_0, "OpenTopoMap": overlay_OpenTopoMap_0};
         L.control.layers(baseMaps,{'Ochre alltime<br /><table><tr><td style="text-align: center;"><img src="legend/Ochrealltime_5_11000.png" /></td><td> 1 - 100 </td></tr><tr><td style="text-align: center;"><img src="legend/Ochrealltime_5_10110001.png" /></td><td> 101 - 1000 </td></tr><tr><td style="text-align: center;"><img src="legend/Ochrealltime_5_10002.png" /></td><td>>1000 </td></tr></table>': layer_Ochrealltime_5,'Habitual 140-40ka<br /><table><tr><td style="text-align: center;"><img src="legend/Habitual14040ka_4_11000.png" /></td><td> 1 - 100 </td></tr><tr><td style="text-align: center;"><img src="legend/Habitual14040ka_4_10110001.png" /></td><td> 101 - 1000 </td></tr><tr><td style="text-align: center;"><img src="legend/Habitual14040ka_4_10002.png" /></td><td>>1000 </td></tr></table>': layer_Habitual14040ka_4,'Emergent 210-140 ka<br /><table><tr><td style="text-align: center;"><img src="legend/Emergent210140ka_3_11000.png" /></td><td> 1 - 100 </td></tr><tr><td style="text-align: center;"><img src="legend/Emergent210140ka_3_10110001.png" /></td><td> 101 - 1000 </td></tr><tr><td style="text-align: center;"><img src="legend/Emergent210140ka_3_10002.png" /></td><td>>1000 </td></tr></table>': layer_Emergent210140ka_3,'Occasional 310-210 ka<br /><table><tr><td style="text-align: center;"><img src="legend/Occasional310210ka_2_11000.png" /></td><td> 1 - 100 </td></tr><tr><td style="text-align: center;"><img src="legend/Occasional310210ka_2_10110001.png" /></td><td> 101 - 1000 </td></tr><tr><td style="text-align: center;"><img src="legend/Occasional310210ka_2_10002.png" /></td><td>>1000 </td></tr></table>': layer_Occasional310210ka_2,'Initial 500-310 ka<br /><table><tr><td style="text-align: center;"><img src="legend/Initial500310ka_1_11000.png" /></td><td> 1 - 100 </td></tr><tr><td style="text-align: center;"><img src="legend/Initial500310ka_1_10110001.png" /></td><td> 101 - 1000 </td></tr><tr><td style="text-align: center;"><img src="legend/Initial500310ka_1_10002.png" /></td><td>>1000 </td></tr></table>': layer_Initial500310ka_1},{collapsed:false}).addTo(map);
         setBounds();
         </script>
