@@ -1,11 +1,5 @@
-# ochre_map
-
-## Data
-Rimtautas Dapauschkas / Andrew Kandel
-
 # Map of ochre occurence in African archaeological assemblages
-
-A geomorphological map of Melka Kunture to be published in Journal of Maps (under review). This repo contains the Web Map created with <a href="https://leafletjs.com" target="_blank">Leaflet</a>.
+A map of ochre remains in archaeological assemblages in Africa at different time slices. This repo contains the Web Map created with <a href="https://leafletjs.com" target="_blank">Leaflet</a>. The data were collected by Rimtautas Dapauschkas and Andrew Kandel and are available in the ROAD database. 
 
 
 ## Links
