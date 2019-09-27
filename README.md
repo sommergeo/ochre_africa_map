@@ -6,12 +6,6 @@ A map of ochre remains in archaeological assemblages in Africa at different time
 *Screenshot of the Ochre map*
 
 
-<figure class="video_container">
-<iframe src="https://sommergeo.github.io/ochre_map/index.html"></iframe>
-</figure>
-
-
-
 ## Links
 The map is available at
 * <a href="https://sommergeo.github.io/ochre_map">GitHub test version</a> `https://sommergeo.github.io/ochre_map`
