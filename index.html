@@ -1,512 +1,219 @@
-<!doctype html>
-<html lang="en">
-    <head>
-        <meta charset="utf-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
-        <meta name="mobile-web-app-capable" content="yes">
-        <meta name="apple-mobile-web-app-capable" content="yes">
-        <link rel="stylesheet" href="css/leaflet.css">
-        <link rel="stylesheet" href="css/qgis2web.css">
-        <link rel="stylesheet" href="css/leaflet-measure.css">
-        <style>
-        html, body, #map {
-            width: 100%;
-            height: 100%;
-            padding: 0;
-            margin: 0;
-        }
-        </style>
-        <title></title>
-    </head>
-    <body>
-        <div id="map">
-        </div>
-        <script src="js/qgis2web_expressions.js"></script>
-        <script src="js/leaflet.js"></script>
-        <script src="js/leaflet.rotatedMarker.js"></script>
-        <script src="js/leaflet.pattern.js"></script>
-        <script src="js/leaflet-hash.js"></script>
-        <script src="js/Autolinker.min.js"></script>
-        <script src="js/rbush.min.js"></script>
-        <script src="js/labelgun.min.js"></script>
-        <script src="js/labels.js"></script>
-        <script src="js/leaflet-measure.js"></script>
-        <script src="data/Initial500310ka_1.js"></script>
-        <script src="data/Occasional310210ka_2.js"></script>
-        <script src="data/Emergent210140ka_3.js"></script>
-        <script src="data/Habitual14040ka_4.js"></script>
-        <script src="data/Ochrealltime_5.js"></script>
-        <script>
-        var highlightLayer;
-        function highlightFeature(e) {
-            highlightLayer = e.target;
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Ochre map</title>
+	<meta charset="utf-8" />
+	<meta name="keywords" content="WebMap, WebGIS, Ochre, Archaeology">
+	<meta name="author" content="Christian Sommer">
+	
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+	<meta name="mobile-web-app-capable" content="yes">
+	<link rel="stylesheet" href="leaflet.css">
 
-            if (e.target.feature.geometry.type === 'LineString') {
-              highlightLayer.setStyle({
-                color: '#ffff00',
-              });
-            } else {
-              highlightLayer.setStyle({
-                fillColor: '#ffff00',
-                fillOpacity: 1
-              });
-            }
-        }
-        var map = L.map('map', {
-            zoomControl:true, maxZoom:28, minZoom:1
-        }).fitBounds([[-36.279799425,-45.50482310202128],[36.548176425,80.37615643202129]]);
-        var hash = new L.Hash(map);
-        map.attributionControl.addAttribution('<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a>');
-        var measureControl = new L.Control.Measure({
-            primaryLengthUnit: 'meters',
-            secondaryLengthUnit: 'kilometers',
-            primaryAreaUnit: 'sqmeters',
-            secondaryAreaUnit: 'hectares'
-        });
-        measureControl.addTo(map);
-        var bounds_group = new L.featureGroup([]);
-        function setBounds() {
-        }
+	<style>
+	html, body, #map {
+		width: 100%;
+		height: 100%;
+		padding: 0;
+		margin: 0;
+	}
+	</style>
+	
+	<style>
+	#legend { width: 800px; height: 500px; }
+		.info { padding: 6px 8px; font: 14px/16px Arial, Helvetica, sans-serif; background: white; background: rgba(255,255,255,0.8); box-shadow: 0 0 15px rgba(0,0,0,0.2); border-radius: 5px; } .info h4 { margin: 0 0 5px; color: #777; }
+		.legend { text-align: left; line-height: 18px; color: #555; } .legend i { width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 0.7; }
+		.th, td {border-bottom: 1px solid #ddd; text-align: center;}
+	</style>
+	
+	<script src="leaflet.js"></script>
+	<script src="data/initial.js"></script>
+	<script src="data/emergent.js"></script>
+	<script src="data/habitual.js"></script>
+	<script src="data/alltime.js"></script>
+
+</head>
+
+<body>
+
+<div id="mapid" style="width: 100%; height: 100%; padding: 0; margin: 0;"></div>
 
 
-	var overlay_OpenTopoMap_0 = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+
+<script>
+
+	// Create Leaflet map
+	var map = L.map('mapid',{minZoom:3, maxZoom:10}).setView([0, 20], 4);
+	map.attributionControl.addAttribution('<a href="http://www.roceeh.net" target="_blank">ROCEEH</a> |  Data: Dapschauskas et al., J. World Prehist. | Map: <a href="https://creativecommons.org/licenses/by/4.0/">CC-BY 4.0</a> by <a rel="author" href="https://www.sommergeo.com">Sommer, C.</a>');
+	
+	// Pop-Up
+    function popUpFunction(feature, layer) {
+        var popupContent = "<b>Name: </b>"+ feature.properties.name +
+			"<br><b>Site ID: </b>"+ feature.properties.site_no +
+			"<br><b>Ochre pieces: </b>"+ feature.properties.phase +
+			"<br><b>Latitude: </b>"+ feature.properties['y'].toFixed(2) +
+			"<br><b>Longitude: </b>"+ feature.properties['x'].toFixed(2);
+        layer.bindPopup(popupContent);
+    }
+
+	// Symbology 
+	var orangeMarker = {
+	radius: 8,
+	fillColor: "#ff7800",
+	color: "#000",
+	weight: 1,
+	opacity: 1,
+	fillOpacity: 0.6
+	};
+	
+	function style_graduated(feature) {
+			if (feature.properties.phase == "Undetermined" ) {
+			return {
+			radius: 4.0,
+			opacity: 1,
+			color: 'rgba(35,35,35,1.0)',
+			dashArray: '',
+			lineCap: 'butt',
+			lineJoin: 'miter',
+			weight: 1,
+			fill: true,
+			fillOpacity: 1,
+			fillColor: 'rgba(219,165,175,1.0)',
+		}
+		}
+		if (feature.properties.phase >= 0.000000 && feature.properties.phase <= 100.000000 ) {
+			return {
+			radius: 4.0,
+			opacity: 1,
+			color: 'rgba(35,35,35,1.0)',
+			dashArray: '',
+			lineCap: 'butt',
+			lineJoin: 'miter',
+			weight: 1,
+			fill: true,
+			fillOpacity: 1,
+			fillColor: 'rgba(219,165,175,1.0)',
+		}
+		}
+		if (feature.properties.phase > 100.000000 && feature.properties.phase <= 1000.000000 ) {
+			return {
+			radius: 12.8,
+			opacity: 1,
+			color: 'rgba(35,35,35,1.0)',
+			dashArray: '',
+			lineCap: 'butt',
+			lineJoin: 'miter',
+			weight: 1,
+			fill: true,
+			fillOpacity: 1,
+			fillColor: 'rgba(192,97,115,1.0)',
+		}
+		}
+		if (feature.properties.phase > 1000.000000 && feature.properties.phase <= 10000.000000 ) {
+			return {
+			radius: 40,
+			opacity: 1,
+			color: 'rgba(35,35,35,1.0)',
+			dashArray: '',
+			lineCap: 'butt',
+			lineJoin: 'miter',
+			weight: 1,
+			fill: true,
+			fillOpacity: 1,
+			fillColor: 'rgba(165,30,55,1.0)',
+		}
+		}
+	}
+	
+	// Add basemaps
+	var osm_basemap = L.tileLayer('https://b.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+		attribution: '<a href="http://www.openstreetmap.org/copyright">© OpenStreetMap-Contributors</a>'
+	}).addTo(map);
+	
+	var opentopo_basemap = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
 	attribution: 'Map data: &copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
 	});
-	//overlay_OpenTopoMap_0.addTo(map);
-	//map.addLayer(overlay_OpenTopoMap_0);
+
+
+	// Add points
+	var layer_alltime = new L.geoJson(geojson_alltime, {
+		onEachFeature: popUpFunction,
+		pointToLayer: function (feature, latlng) {
+			var context = {
+				feature: feature,
+				variables: {}
+			};
+			return L.circleMarker(latlng, style_graduated(feature));
+		},
+	});
+	layer_alltime.addTo(map)
+	
+	var layer_habitual = new L.geoJson(geojson_habitual, {
+		onEachFeature: popUpFunction,
+		pointToLayer: function (feature, latlng) {
+			var context = {
+				feature: feature,
+				variables: {}
+			};
+			return L.circleMarker(latlng, style_graduated(feature));
+		},
+	});
+	//layer_habitual.addTo(map)
+	
+	var layer_emergent = new L.geoJson(geojson_emergent, {
+		onEachFeature: popUpFunction,
+		pointToLayer: function (feature, latlng) {
+			var context = {
+				feature: feature,
+				variables: {}
+			};
+			return L.circleMarker(latlng, style_graduated(feature));
+		},
+	});
+	//layer_emergent.addTo(map);
+	
+	var layer_initial = new L.geoJson(geojson_initial, {
+		onEachFeature: popUpFunction,
+		pointToLayer: function (feature, latlng) {
+			var context = {
+				feature: feature,
+				variables: {}
+			};
+			return L.circleMarker(latlng, style_graduated(feature));
+		},
+	});
+	//layer_initial.addTo(map)
+	
+	//Layer Control
+	var baseMaps = {'Open Street Map': osm_basemap,
+		'Open Topo Map': opentopo_basemap};
+	var overlay = {'All time (500–40 ka)<hr>': layer_alltime,
+		'Habitual (160–40 ka)': layer_habitual,
+		'Emergent (330–160 ka)': layer_emergent,
+		'Initial (500–330 ka)': layer_initial,}
+	L.control.layers(baseMaps,overlay,{collapsed:false}).addTo(map);
+	
+	// Legend
+	var legend = L.control({position: 'topright'});
+	legend.onAdd = function (legend) {
+	
+		var div = L.DomUtil.create('div', 'info legend');
+		div.innerHTML +=
+		'<table><tr style="text-align:left"><th>Number of<br>ochre pieces</th><th></th></tr>' +
+		'<tr><td style="text-align:left">1–100</td><td><svg width="18" height="18" > <circle cx="9" cy="9" r="4" fill="#dba5af" stroke="#000" opacity="1" fill-opacity="1"/></svg></td></tr>' +
+		'<tr><td style="text-align:left">101–1000</td><td><svg width="28" height="28" > <circle cx="13.5" cy="13.5" r="12.8" fill="#c06173" stroke="#000" opacity="1" fill-opacity="1"/></svg></td></tr>' +
+		'<tr><td style="text-align:left">> 1000</td><td><svg width="82" height="82" > <circle cx="40.5" cy="40.5" r="40" fill="#a51e37" stroke="#000" opacity="1" fill-opacity="1"/></svg></td></tr>' +
+		'</tr></table>'+
+		'<p>If the number of pieces is 0,<br>the exact abundance is<br>undetermined.'
+		;
 		
-        var overlay_OpenStreetMap_0 = L.tileLayer('http://a.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            opacity: 1.0
-        });
-        overlay_OpenStreetMap_0.addTo(map);
-        map.addLayer(overlay_OpenStreetMap_0);
-		
+		return div;
+	
+	};
 
-		
-		
-        function pop_Initial500310ka_1(feature, layer) {
-            layer.on({
-                mouseout: function(e) {
-                    for (i in e.target._eventParents) {
-                        e.target._eventParents[i].resetStyle(e.target);
-                    }
-                },
-                mouseover: highlightFeature,
-            });
-            var popupContent = '<table>\
-                    <tr>\
-                        <td colspan="2"><strong>locality</strong><br />' + (feature.properties['locality'] !== null ? Autolinker.link(String(feature.properties['locality'])) : '') + '</td>\
-                    </tr>\
-                    <tr>\
-                        <td colspan="2"><strong>ochre count</strong><br />' + (feature.properties['ochre'] !== null ? Autolinker.link(String(feature.properties['ochre'])) : '') + '</td>\
-                    </tr>\
-                </table>';
-            layer.bindPopup(popupContent, {maxHeight: 400});
-        }
-
-        function style_Initial500310ka_1_0(feature) {
-            if (feature.properties['ochre'] >= 0.000000 && feature.properties['ochre'] <= 100.000000 ) {
-                return {
-                pane: 'pane_Initial500310ka_1',
-                radius: 4.0,
-                opacity: 1,
-                color: 'rgba(35,35,35,1.0)',
-                dashArray: '',
-                lineCap: 'butt',
-                lineJoin: 'miter',
-                weight: 1,
-                fill: true,
-                fillOpacity: 1,
-                fillColor: 'rgba(255,245,240,1.0)',
-            }
-            }
-            if (feature.properties['ochre'] >= 100.000000 && feature.properties['ochre'] <= 1000.000000 ) {
-                return {
-                pane: 'pane_Initial500310ka_1',
-                radius: 8.0,
-                opacity: 1,
-                color: 'rgba(35,35,35,1.0)',
-                dashArray: '',
-                lineCap: 'butt',
-                lineJoin: 'miter',
-                weight: 1,
-                fill: true,
-                fillOpacity: 1,
-                fillColor: 'rgba(252,112,80,1.0)',
-            }
-            }
-            if (feature.properties['ochre'] >= 1000.000000 && feature.properties['ochre'] <= 10000.000000 ) {
-                return {
-                pane: 'pane_Initial500310ka_1',
-                radius: 12.0,
-                opacity: 1,
-                color: 'rgba(35,35,35,1.0)',
-                dashArray: '',
-                lineCap: 'butt',
-                lineJoin: 'miter',
-                weight: 1,
-                fill: true,
-                fillOpacity: 1,
-                fillColor: 'rgba(103,0,13,1.0)',
-            }
-            }
-        }
-        map.createPane('pane_Initial500310ka_1');
-        map.getPane('pane_Initial500310ka_1').style.zIndex = 401;
-        map.getPane('pane_Initial500310ka_1').style['mix-blend-mode'] = 'normal';
-        var layer_Initial500310ka_1 = new L.geoJson(json_Initial500310ka_1, {
-            attribution: '<a href=""></a>',
-            pane: 'pane_Initial500310ka_1',
-            onEachFeature: pop_Initial500310ka_1,
-            pointToLayer: function (feature, latlng) {
-                var context = {
-                    feature: feature,
-                    variables: {}
-                };
-                return L.circleMarker(latlng, style_Initial500310ka_1_0(feature));
-            },
-        });
-        bounds_group.addLayer(layer_Initial500310ka_1);
-        function pop_Occasional310210ka_2(feature, layer) {
-            layer.on({
-                mouseout: function(e) {
-                    for (i in e.target._eventParents) {
-                        e.target._eventParents[i].resetStyle(e.target);
-                    }
-                },
-                mouseover: highlightFeature,
-            });
-            var popupContent = '<table>\
-                    <tr>\
-                        <td colspan="2"><strong>assemblage</strong><br />' + (feature.properties['assemblage'] !== null ? Autolinker.link(String(feature.properties['assemblage'])) : '') + '</td>\
-                    </tr>\
-                    <tr>\
-                        <td colspan="2"><strong>ochre count</strong><br />' + (feature.properties['ochre'] !== null ? Autolinker.link(String(feature.properties['ochre'])) : '') + '</td>\
-                    </tr>\
-                </table>';
-            layer.bindPopup(popupContent, {maxHeight: 400});
-        }
-
-        function style_Occasional310210ka_2_0(feature) {
-            if (feature.properties['ochre'] >= 0.000000 && feature.properties['ochre'] <= 100.000000 ) {
-                return {
-                pane: 'pane_Occasional310210ka_2',
-                radius: 4.0,
-                opacity: 1,
-                color: 'rgba(35,35,35,1.0)',
-                dashArray: '',
-                lineCap: 'butt',
-                lineJoin: 'miter',
-                weight: 1,
-                fill: true,
-                fillOpacity: 1,
-                fillColor: 'rgba(255,245,240,1.0)',
-            }
-            }
-            if (feature.properties['ochre'] >= 100.000000 && feature.properties['ochre'] <= 1000.000000 ) {
-                return {
-                pane: 'pane_Occasional310210ka_2',
-                radius: 8.0,
-                opacity: 1,
-                color: 'rgba(35,35,35,1.0)',
-                dashArray: '',
-                lineCap: 'butt',
-                lineJoin: 'miter',
-                weight: 1,
-                fill: true,
-                fillOpacity: 1,
-                fillColor: 'rgba(252,112,80,1.0)',
-            }
-            }
-            if (feature.properties['ochre'] >= 1000.000000 && feature.properties['ochre'] <= 10000.000000 ) {
-                return {
-                pane: 'pane_Occasional310210ka_2',
-                radius: 12.0,
-                opacity: 1,
-                color: 'rgba(35,35,35,1.0)',
-                dashArray: '',
-                lineCap: 'butt',
-                lineJoin: 'miter',
-                weight: 1,
-                fill: true,
-                fillOpacity: 1,
-                fillColor: 'rgba(103,0,13,1.0)',
-            }
-            }
-        }
-        map.createPane('pane_Occasional310210ka_2');
-        map.getPane('pane_Occasional310210ka_2').style.zIndex = 402;
-        map.getPane('pane_Occasional310210ka_2').style['mix-blend-mode'] = 'normal';
-        var layer_Occasional310210ka_2 = new L.geoJson(json_Occasional310210ka_2, {
-            attribution: '<a href=""></a>',
-            pane: 'pane_Occasional310210ka_2',
-            onEachFeature: pop_Occasional310210ka_2,
-            pointToLayer: function (feature, latlng) {
-                var context = {
-                    feature: feature,
-                    variables: {}
-                };
-                return L.circleMarker(latlng, style_Occasional310210ka_2_0(feature));
-            },
-        });
-        bounds_group.addLayer(layer_Occasional310210ka_2);
-        function pop_Emergent210140ka_3(feature, layer) {
-            layer.on({
-                mouseout: function(e) {
-                    for (i in e.target._eventParents) {
-                        e.target._eventParents[i].resetStyle(e.target);
-                    }
-                },
-                mouseover: highlightFeature,
-            });
-            var popupContent = '<table>\
-                    <tr>\
-                        <td colspan="2"><strong>locality</strong><br />' + (feature.properties['locality'] !== null ? Autolinker.link(String(feature.properties['locality'])) : '') + '</td>\
-                    </tr>\
-                    <tr>\
-                        <td colspan="2"><strong>ochre count</strong><br />' + (feature.properties['ochre'] !== null ? Autolinker.link(String(feature.properties['ochre'])) : '') + '</td>\
-                    </tr>\
-                </table>';
-            layer.bindPopup(popupContent, {maxHeight: 400});
-        }
-
-        function style_Emergent210140ka_3_0(feature) {
-            if (feature.properties['ochre'] >= 0.000000 && feature.properties['ochre'] <= 100.000000 ) {
-                return {
-                pane: 'pane_Emergent210140ka_3',
-                radius: 4.0,
-                opacity: 1,
-                color: 'rgba(35,35,35,1.0)',
-                dashArray: '',
-                lineCap: 'butt',
-                lineJoin: 'miter',
-                weight: 1,
-                fill: true,
-                fillOpacity: 1,
-                fillColor: 'rgba(255,245,240,1.0)',
-            }
-            }
-            if (feature.properties['ochre'] >= 100.000000 && feature.properties['ochre'] <= 1000.000000 ) {
-                return {
-                pane: 'pane_Emergent210140ka_3',
-                radius: 8.0,
-                opacity: 1,
-                color: 'rgba(35,35,35,1.0)',
-                dashArray: '',
-                lineCap: 'butt',
-                lineJoin: 'miter',
-                weight: 1,
-                fill: true,
-                fillOpacity: 1,
-                fillColor: 'rgba(252,112,80,1.0)',
-            }
-            }
-            if (feature.properties['ochre'] >= 1000.000000 && feature.properties['ochre'] <= 10000.000000 ) {
-                return {
-                pane: 'pane_Emergent210140ka_3',
-                radius: 12.0,
-                opacity: 1,
-                color: 'rgba(35,35,35,1.0)',
-                dashArray: '',
-                lineCap: 'butt',
-                lineJoin: 'miter',
-                weight: 1,
-                fill: true,
-                fillOpacity: 1,
-                fillColor: 'rgba(103,0,13,1.0)',
-            }
-            }
-        }
-        map.createPane('pane_Emergent210140ka_3');
-        map.getPane('pane_Emergent210140ka_3').style.zIndex = 403;
-        map.getPane('pane_Emergent210140ka_3').style['mix-blend-mode'] = 'normal';
-        var layer_Emergent210140ka_3 = new L.geoJson(json_Emergent210140ka_3, {
-            attribution: '<a href=""></a>',
-            pane: 'pane_Emergent210140ka_3',
-            onEachFeature: pop_Emergent210140ka_3,
-            pointToLayer: function (feature, latlng) {
-                var context = {
-                    feature: feature,
-                    variables: {}
-                };
-                return L.circleMarker(latlng, style_Emergent210140ka_3_0(feature));
-            },
-        });
-        bounds_group.addLayer(layer_Emergent210140ka_3);
-        function pop_Habitual14040ka_4(feature, layer) {
-            layer.on({
-                mouseout: function(e) {
-                    for (i in e.target._eventParents) {
-                        e.target._eventParents[i].resetStyle(e.target);
-                    }
-                },
-                mouseover: highlightFeature,
-            });
-            var popupContent = '<table>\
-                    <tr>\
-                        <td colspan="2"><strong>locality</strong><br />' + (feature.properties['locality'] !== null ? Autolinker.link(String(feature.properties['locality'])) : '') + '</td>\
-                    </tr>\
-                    <tr>\
-                        <td colspan="2"><strong>ochre count</strong><br />' + (feature.properties['ochre'] !== null ? Autolinker.link(String(feature.properties['ochre'])) : '') + '</td>\
-                    </tr>\
-                </table>';
-            layer.bindPopup(popupContent, {maxHeight: 400});
-        }
-
-        function style_Habitual14040ka_4_0(feature) {
-            if (feature.properties['ochre'] >= 0.000000 && feature.properties['ochre'] <= 100.000000 ) {
-                return {
-                pane: 'pane_Habitual14040ka_4',
-                radius: 4.0,
-                opacity: 1,
-                color: 'rgba(35,35,35,1.0)',
-                dashArray: '',
-                lineCap: 'butt',
-                lineJoin: 'miter',
-                weight: 1,
-                fill: true,
-                fillOpacity: 1,
-                fillColor: 'rgba(255,245,240,1.0)',
-            }
-            }
-            if (feature.properties['ochre'] >= 100.000000 && feature.properties['ochre'] <= 1000.000000 ) {
-                return {
-                pane: 'pane_Habitual14040ka_4',
-                radius: 8.0,
-                opacity: 1,
-                color: 'rgba(35,35,35,1.0)',
-                dashArray: '',
-                lineCap: 'butt',
-                lineJoin: 'miter',
-                weight: 1,
-                fill: true,
-                fillOpacity: 1,
-                fillColor: 'rgba(252,112,80,1.0)',
-            }
-            }
-            if (feature.properties['ochre'] >= 1000.000000 && feature.properties['ochre'] <= 10000.000000 ) {
-                return {
-                pane: 'pane_Habitual14040ka_4',
-                radius: 12.0,
-                opacity: 1,
-                color: 'rgba(35,35,35,1.0)',
-                dashArray: '',
-                lineCap: 'butt',
-                lineJoin: 'miter',
-                weight: 1,
-                fill: true,
-                fillOpacity: 1,
-                fillColor: 'rgba(103,0,13,1.0)',
-            }
-            }
-        }
-        map.createPane('pane_Habitual14040ka_4');
-        map.getPane('pane_Habitual14040ka_4').style.zIndex = 404;
-        map.getPane('pane_Habitual14040ka_4').style['mix-blend-mode'] = 'normal';
-        var layer_Habitual14040ka_4 = new L.geoJson(json_Habitual14040ka_4, {
-            attribution: '<a href=""></a>',
-            pane: 'pane_Habitual14040ka_4',
-            onEachFeature: pop_Habitual14040ka_4,
-            pointToLayer: function (feature, latlng) {
-                var context = {
-                    feature: feature,
-                    variables: {}
-                };
-                return L.circleMarker(latlng, style_Habitual14040ka_4_0(feature));
-            },
-        });
-        bounds_group.addLayer(layer_Habitual14040ka_4);
-        function pop_Ochrealltime_5(feature, layer) {
-            layer.on({
-                mouseout: function(e) {
-                    for (i in e.target._eventParents) {
-                        e.target._eventParents[i].resetStyle(e.target);
-                    }
-                },
-                mouseover: highlightFeature,
-            });
-            var popupContent = '<table>\
-                    <tr>\
-                        <td colspan="2"><strong>locality</strong><br />' + (feature.properties['locality'] !== null ? Autolinker.link(String(feature.properties['locality'])) : '') + '</td>\
-                    </tr>\
-                    <tr>\
-                        <td colspan="2"><strong>ochre count</strong><br />' + (feature.properties['ochre'] !== null ? Autolinker.link(String(feature.properties['ochre'])) : '') + '</td>\
-                    </tr>\
-                    <tr>\
-                        <td colspan="2"><strong>ID</strong><br />' + (feature.properties['ID_number'] !== null ? Autolinker.link(String(feature.properties['ID_number'])) : '') + '</td>\
-                    </tr>\
-                </table>';
-            layer.bindPopup(popupContent, {maxHeight: 400});
-        }
-
-        function style_Ochrealltime_5_0(feature) {
-            if (feature.properties['ochre'] >= 0.000000 && feature.properties['ochre'] <= 100.000000 ) {
-                return {
-                pane: 'pane_Ochrealltime_5',
-                radius: 4.0,
-                opacity: 1,
-                color: 'rgba(35,35,35,1.0)',
-                dashArray: '',
-                lineCap: 'butt',
-                lineJoin: 'miter',
-                weight: 1,
-                fill: true,
-                fillOpacity: 1,
-                fillColor: 'rgba(255,245,240,1.0)',
-            }
-            }
-            if (feature.properties['ochre'] >= 100.000000 && feature.properties['ochre'] <= 1000.000000 ) {
-                return {
-                pane: 'pane_Ochrealltime_5',
-                radius: 8.0,
-                opacity: 1,
-                color: 'rgba(35,35,35,1.0)',
-                dashArray: '',
-                lineCap: 'butt',
-                lineJoin: 'miter',
-                weight: 1,
-                fill: true,
-                fillOpacity: 1,
-                fillColor: 'rgba(252,112,80,1.0)',
-            }
-            }
-            if (feature.properties['ochre'] >= 1000.000000 && feature.properties['ochre'] <= 10000.000000 ) {
-                return {
-                pane: 'pane_Ochrealltime_5',
-                radius: 12.0,
-                opacity: 1,
-                color: 'rgba(35,35,35,1.0)',
-                dashArray: '',
-                lineCap: 'butt',
-                lineJoin: 'miter',
-                weight: 1,
-                fill: true,
-                fillOpacity: 1,
-                fillColor: 'rgba(103,0,13,1.0)',
-            }
-            }
-        }
-        map.createPane('pane_Ochrealltime_5');
-        map.getPane('pane_Ochrealltime_5').style.zIndex = 405;
-        map.getPane('pane_Ochrealltime_5').style['mix-blend-mode'] = 'normal';
-        var layer_Ochrealltime_5 = new L.geoJson(json_Ochrealltime_5, {
-            attribution: '<a href=""></a>',
-            pane: 'pane_Ochrealltime_5',
-            onEachFeature: pop_Ochrealltime_5,
-            pointToLayer: function (feature, latlng) {
-                var context = {
-                    feature: feature,
-                    variables: {}
-                };
-                return L.circleMarker(latlng, style_Ochrealltime_5_0(feature));
-            },
-        });
-        bounds_group.addLayer(layer_Ochrealltime_5);
-        map.addLayer(layer_Ochrealltime_5);
-        var baseMaps = {"OpenStreetMap": overlay_OpenStreetMap_0, "OpenTopoMap": overlay_OpenTopoMap_0};
-        L.control.layers(baseMaps,{'Ochre alltime<br /><table><tr><td style="text-align: center;"><img src="legend/Ochrealltime_5_11000.png" /></td><td> 1 - 100 </td></tr><tr><td style="text-align: center;"><img src="legend/Ochrealltime_5_10110001.png" /></td><td> 101 - 1000 </td></tr><tr><td style="text-align: center;"><img src="legend/Ochrealltime_5_10002.png" /></td><td>>1000 </td></tr></table>': layer_Ochrealltime_5,'Habitual 140-40ka<br /><table><tr><td style="text-align: center;"><img src="legend/Habitual14040ka_4_11000.png" /></td><td> 1 - 100 </td></tr><tr><td style="text-align: center;"><img src="legend/Habitual14040ka_4_10110001.png" /></td><td> 101 - 1000 </td></tr><tr><td style="text-align: center;"><img src="legend/Habitual14040ka_4_10002.png" /></td><td>>1000 </td></tr></table>': layer_Habitual14040ka_4,'Emergent 210-140 ka<br /><table><tr><td style="text-align: center;"><img src="legend/Emergent210140ka_3_11000.png" /></td><td> 1 - 100 </td></tr><tr><td style="text-align: center;"><img src="legend/Emergent210140ka_3_10110001.png" /></td><td> 101 - 1000 </td></tr><tr><td style="text-align: center;"><img src="legend/Emergent210140ka_3_10002.png" /></td><td>>1000 </td></tr></table>': layer_Emergent210140ka_3,'Occasional 310-210 ka<br /><table><tr><td style="text-align: center;"><img src="legend/Occasional310210ka_2_11000.png" /></td><td> 1 - 100 </td></tr><tr><td style="text-align: center;"><img src="legend/Occasional310210ka_2_10110001.png" /></td><td> 101 - 1000 </td></tr><tr><td style="text-align: center;"><img src="legend/Occasional310210ka_2_10002.png" /></td><td>>1000 </td></tr></table>': layer_Occasional310210ka_2,'Initial 500-310 ka<br /><table><tr><td style="text-align: center;"><img src="legend/Initial500310ka_1_11000.png" /></td><td> 1 - 100 </td></tr><tr><td style="text-align: center;"><img src="legend/Initial500310ka_1_10110001.png" /></td><td> 101 - 1000 </td></tr><tr><td style="text-align: center;"><img src="legend/Initial500310ka_1_10002.png" /></td><td>>1000 </td></tr></table>': layer_Initial500310ka_1},{collapsed:false}).addTo(map);
-        setBounds();
-        </script>
-    </body>
+legend.addTo(map);
+	
+</script>
+</body>
 </html>
