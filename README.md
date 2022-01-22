@@ -9,4 +9,4 @@ The map is part of the publication Dapschauskas, R., Göden, M.B. Sommer, C., Ka
 
 ## Links
 The map is available at
-* <a href="https://sommergeo.github.io/ochre_map">GitHub test version</a> `https://sommergeo.github.io/ochre_africa_map`
+* <a href="https://sommergeo.github.io/ochre_africa_map">GitHub test version</a> `https://sommergeo.github.io/ochre_africa_map`
